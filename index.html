@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Il Calcio Nordico</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body {
+      background: #101621;
+      color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+    #app { width: 100%; max-width: 920px; padding: 10px; }
+
+    .card {
+      background: #182233;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    h1, h2 { margin-bottom: 14px; }
+    h1 { font-size: 28px; text-align: center; }
+    h2 { font-size: 22px; }
+
+    .subtitle { text-align: center; margin-bottom: 18px; color: #9aa4c0; }
+
+    .menu-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      background: #2b3a56;
+      color: #f5f5f5;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    button:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: default; box-shadow: none; transform: none; }
+
+    .btn-stadio    { background: #0e84ff; }
+    .btn-giocatore { background: #00c853; }
+    .btn-logo      { background: #ff9100; }
+    .btn-bjarnason { background: #e53935; }
+
+    .btn-stadio:hover    { background: #2a96ff; }
+    .btn-giocatore:hover { background: #00e676; }
+    .btn-logo:hover      { background: #ffb74d; }
+    .btn-bjarnason:hover { background: #f4511e; }
+
+    .danger { background: #b3261e; }
+    .danger:hover { background: #cf3b33; }
+
+    .hidden { display: none; }
+
+    .quiz-question { margin: 12px 0 16px; font-size: 18px; line-height: 1.25; }
+    .answers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .answers button { text-align: left; }
+
+    .feedback { min-height: 24px; margin-bottom: 16px; font-weight: 800; }
+    .feedback.correct { color: #4caf50; }
+    .feedback.wrong   { color: #ff9800; }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .score { font-size: 14px; color: #c1c9dd; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #243049;
+      color: #9aa4c0;
+      display: inline-block;
+    }
+
+    /* Gioco */
+    #bjarnason-canvas {
+      background: #0b0f19;
+      border-radius: 12px;
+      border: 1px solid #252f43;
+      display: block;
+      margin: 12px auto 8px;
+      width: 100%;
+      max-width: 900px;
+      height: auto;
+      touch-action: none;
+    }
+
+    .controls {
+      font-size: 13px;
+      color: #c1c9dd;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .btn-small { padding: 6px 12px; font-size: 13px; }
+
+    .game-ui-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top: 8px;
+    }
+
+    .touch-controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top: 12px;
+    }
+
+    .touch-btn{
+      min-width: 110px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      background: #2b3a56;
+    }
+    .touch-btn.jump { background: #00c853; }
+    .touch-btn.left, .touch-btn.right { background: #0e84ff; }
+
+    @media (max-width: 560px){
+      .menu-buttons { grid-template-columns: 1fr; }
+      .touch-btn { min-width: 30vw; }
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#101621">
+</head>
+<body>
+<div id="app">
+  <!-- MENU -->
+  <div id="menu" class="card">
+    <h1>Il Calcio Nordico</h1>
+    <p class="subtitle">Seleziona una modalità</p>
+    <div class="menu-buttons">
+      <button class="btn-stadio"    data-mode="stadio">Quiz stadi</button>
+      <button class="btn-giocatore" data-mode="giocatore">Quiz giocatori</button>
+      <button class="btn-logo"      data-mode="logo">Quiz club</button>
+      <button class="btn-bjarnason" data-mode="bjarnason">Bjarnason Figlio di Odino</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-section" class="card hidden">
+    <div class="top-bar">
+      <div>
+        <h2 id="quiz-title">Quiz</h2>
+        <div class="tag" id="quiz-tag">Calcio nordico</div>
+      </div>
+      <button id="quiz-back-menu" class="danger btn-small">Torna al menu</button>
+    </div>
+
+    <div class="quiz-question" id="quiz-question-text"></div>
+    <div class="answers" id="answers-container"></div>
+    <div id="quiz-feedback" class="feedback"></div>
+
+    <div class="quiz-footer">
+      <div class="score" id="quiz-score"></div>
+      <button id="quiz-next" disabled>Prossima domanda</button>
+    </div>
+  </div>
+
+  <!-- GIOCO -->
+  <div id="game-section" class="card hidden">
+    <div class="top-bar">
+      <div>
+        <h2>Bjarnason Figlio di Odino</h2>
+        <div class="tag">Platform 2D – 25 livelli – 5 vite</div>
+      </div>
+      <button id="game-back-menu" class="danger btn-small">Torna al menu</button>
+    </div>
+
+    <p class="controls">
+      Controlli: ← → (o A/D) per muovere — ↑ / Spazio per saltare. Su mobile: usa i pulsanti sotto.<br>
+      Ostacoli: scalini, spuntoni, difensori tedeschi (maglia Germania). Rune: aumentano la potenza del salto (cumulabile).<br>
+      Arrivo: bandiera islandese.
+    </p>
+
+    <div class="game-ui-row">
+      <button id="start-btn">Avvia / Riavvia</button>
+      <div class="score" id="bjarnason-status">Premi “Avvia / Riavvia”. Vite: 5.</div>
+    </div>
+
+    <canvas id="bjarnason-canvas" width="900" height="360"></canvas>
+
+    <div class="touch-controls" aria-label="Comandi touch">
+      <button class="touch-btn left"  id="touch-left">◀ Sinistra</button>
+      <button class="touch-btn jump"  id="touch-jump">⬆ Salto</button>
+      <button class="touch-btn right" id="touch-right">Destra ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const QUESTIONS_PER_RUN = 10;
+
+  // -------------------- DOM --------------------
+  const menuEl           = document.getElementById("menu");
+  const quizSectionEl    = document.getElementById("quiz-section");
+  const gameSectionEl    = document.getElementById("game-section");
+
+  const quizTitleEl        = document.getElementById("quiz-title");
+  const quizTagEl          = document.getElementById("quiz-tag");
+  const quizQuestionTextEl = document.getElementById("quiz-question-text");
+  const answersContainerEl = document.getElementById("answers-container");
+  const quizFeedbackEl     = document.getElementById("quiz-feedback");
+  const quizScoreEl        = document.getElementById("quiz-score");
+  const quizNextBtn        = document.getElementById("quiz-next");
+  const quizBackMenuBtn    = document.getElementById("quiz-back-menu");
+
+  const gameBackMenuBtn    = document.getElementById("game-back-menu");
+
+  // -------------------- UI --------------------
+  let gameRunning = false;
+
+  function stopGameLoop() { gameRunning = false; }
+
+  function showMenu() {
+    stopGameLoop();
+    menuEl.classList.remove("hidden");
+    quizSectionEl.classList.add("hidden");
+    gameSectionEl.classList.add("hidden");
+  }
+  function showQuizSection() {
+    stopGameLoop();
+    menuEl.classList.add("hidden");
+    quizSectionEl.classList.remove("hidden");
+    gameSectionEl.classList.add("hidden");
+  }
+  function showGameSection() {
+    menuEl.classList.add("hidden");
+    quizSectionEl.classList.add("hidden");
+    gameSectionEl.classList.remove("hidden");
+  }
+
+  // -------------------- UTIL --------------------
+  function shuffle(array) {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function uniq(arr) {
+    const out = [];
+    const seen = new Set();
+    for (const x of arr) {
+      if (seen.has(x)) continue;
+      seen.add(x);
+      out.push(x);
+    }
+    return out;
+  }
+  function pickN(arr, n, excludeSet = null) {
+    const pool = arr.filter(x => !excludeSet || !excludeSet.has(x));
+    return shuffle(pool).slice(0, Math.min(n, pool.length));
+  }
+  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+  function buildAnswers(correct, wrongPool, countTotal) {
+    const exclude = new Set([correct]);
+    const wrongs = pickN(uniq(wrongPool), countTotal - 1, exclude);
+    const answers = shuffle([correct, ...wrongs]);
+    const correctIndex = answers.indexOf(correct);
+    return { answers, correctIndex };
+  }
+
+  // -------------------- DATI (verificati / normalizzati) --------------------
+  const stadiumBase = [
+    { name: "Parken Stadium",               city: "Copenaghen",  country: "Danimarca" },
+    { name: "Brøndby Stadium",              city: "Brøndby",     country: "Danimarca" },
+    { name: "Ceres Park (Aarhus Stadion)",  city: "Aarhus",      country: "Danimarca" },
+    { name: "Nature Energy Park (Odense)",  city: "Odense",      country: "Danimarca" },
+    { name: "Blue Water Arena",             city: "Esbjerg",     country: "Danimarca" },
+
+    { name: "Friends Arena",                city: "Solna",       country: "Svezia" },
+    { name: "Eleda Stadion",                city: "Malmö",       country: "Svezia" },
+    { name: "Ullevi",                       city: "Göteborg",    country: "Svezia" },
+    { name: "Gamla Ullevi",                 city: "Göteborg",    country: "Svezia" },
+    { name: "Borås Arena",                  city: "Borås",       country: "Svezia" },
+    { name: "Olympia",                      city: "Helsingborg", country: "Svezia" },
+
+    { name: "Ullevaal Stadion",             city: "Oslo",        country: "Norvegia" },
+    { name: "Intility Arena",               city: "Oslo",        country: "Norvegia" },
+    { name: "Lerkendal Stadion",            city: "Trondheim",   country: "Norvegia" },
+    { name: "Brann Stadion",                city: "Bergen",      country: "Norvegia" },
+    { name: "Lyse Arena (Viking Stadion)",  city: "Stavanger",   country: "Norvegia" },
+
+    { name: "Helsinki Olympic Stadium",     city: "Helsinki",    country: "Finlandia" },
+    { name: "Bolt Arena (Töölö)",           city: "Helsinki",    country: "Finlandia" },
+    { name: "Tammelan Stadion",             city: "Tampere",     country: "Finlandia" }
+  ];
+
+  const playerBase = [
+    { name: "Zlatan Ibrahimović",  nationality: "Svezia",    position: "Attaccante" },
+    { name: "Henrik Larsson",      nationality: "Svezia",    position: "Attaccante" },
+
+    { name: "Michael Laudrup",     nationality: "Danimarca", position: "Centrocampista" },
+    { name: "Peter Schmeichel",    nationality: "Danimarca", position: "Portiere" },
+    { name: "Christian Eriksen",   nationality: "Danimarca", position: "Centrocampista" },
+
+    { name: "Erling Haaland",      nationality: "Norvegia",  position: "Attaccante" },
+    { name: "Ole Gunnar Solskjær", nationality: "Norvegia",  position: "Attaccante" },
+    { name: "John Arne Riise",     nationality: "Norvegia",  position: "Difensore" },
+    { name: "Martin Ødegaard",     nationality: "Norvegia",  position: "Centrocampista" },
+
+    { name: "Teemu Pukki",         nationality: "Finlandia", position: "Attaccante" },
+    { name: "Jari Litmanen",       nationality: "Finlandia", position: "Centrocampista" },
+    { name: "Sami Hyypiä",         nationality: "Finlandia", position: "Difensore" },
+
+    { name: "Eiður Guðjohnsen",    nationality: "Islanda",   position: "Attaccante" },
+    { name: "Birkir Bjarnason",    nationality: "Islanda",   position: "Centrocampista" },
+
+    { name: "Michael Ballack",     nationality: "Germania",  position: "Centrocampista" }
+  ];
+
+  const clubBase = [
+    { name: "FC Copenhagen",   country: "Danimarca" },
+    { name: "Brøndby IF",      country: "Danimarca" },
+    { name: "FC Midtjylland",  country: "Danimarca" },
+    { name: "Odense BK",       country: "Danimarca" },
+    { name: "AGF",             country: "Danimarca" },
+
+    { name: "Malmö FF",        country: "Svezia" },
+    { name: "IFK Göteborg",    country: "Svezia" },
+    { name: "AIK",             country: "Svezia" },
+    { name: "Djurgårdens IF",  country: "Svezia" },
+    { name: "Hammarby IF",     country: "Svezia" },
+
+    { name: "Rosenborg BK",    country: "Norvegia" },
+    { name: "Molde FK",        country: "Norvegia" },
+    { name: "Viking FK",       country: "Norvegia" },
+    { name: "SK Brann",        country: "Norvegia" },
+    { name: "Bodø/Glimt",      country: "Norvegia" },
+
+    { name: "HJK Helsinki",    country: "Finlandia" },
+    { name: "KuPS",            country: "Finlandia" },
+
+    { name: "KR Reykjavík",    country: "Islanda" },
+    { name: "FH Hafnarfjörður",country: "Islanda" },
+    { name: "Valur",           country: "Islanda" }
+  ];
+
+  const stadiumCities = uniq(stadiumBase.map(s => s.city));
+  const stadiumCountries = uniq(stadiumBase.map(s => s.country));
+  const playerCountries = uniq(playerBase.map(p => p.nationality));
+  const playerPositions = ["Portiere", "Difensore", "Centrocampista", "Attaccante"];
+  const clubCountries = uniq(clubBase.map(c => c.country));
+  const clubNames = uniq(clubBase.map(c => c.name));
+
+  // -------------------- QUIZ: ADATTIVO + ANTI-RIPETIZIONE --------------------
+  let currentQuizKey = null;
+  let currentScore = 0;
+  let quizLocked = false;
+  let currentQuestionPointer = 0;
+  let questionsThisRun = 0;
+  let askedIds = new Set();
+  let currentQuestion = null; // {id, question, answers, correct}
+
+  function difficultyFor(questionNumber1Based, correctSoFar) {
+    const answered = questionNumber1Based - 1;
+    const ratio = answered > 0 ? (correctSoFar / answered) : 0;
+
+    let base;
+    if (questionNumber1Based <= 3) base = 1;
+    else if (questionNumber1Based <= 7) base = 2;
+    else base = 3;
+
+    if (ratio >= 0.80) base += 1;
+    if (ratio <= 0.40) base -= 1;
+
+    return clamp(base, 1, 3);
+  }
+
+  function genStadiumQuestion(diff) {
+    const s = stadiumBase[Math.floor(Math.random() * stadiumBase.length)];
+    const allNames = stadiumBase.map(x => x.name);
+
+    if (diff === 1) {
+      // Nome -> Città (opzioni città)
+      const id = `S1|city|${s.name}`;
+      const { answers, correctIndex } = buildAnswers(s.city, stadiumCities, 4);
+      return { id, question: `In quale città si trova lo stadio "${s.name}"?`, answers, correct: correctIndex };
+    }
+
+    if (diff === 2) {
+      // Città -> Stadio (opzioni stadi, più difficile)
+      const id = `S2|name|${s.city}|${s.name}`;
+      const wrongNames = allNames.filter(n => n !== s.name);
+      const { answers, correctIndex } = buildAnswers(s.name, wrongNames, 4);
+      return { id, question: `Quale stadio si trova a ${s.city}?`, answers, correct: correctIndex };
+    }
+
+    // diff 3: Paese -> "quale NON è in..."
+    const country = s.country;
+    const inCountry = stadiumBase.filter(x => x.country === country).map(x => x.name);
+    const outCountry = stadiumBase.filter(x => x.country !== country).map(x => x.name);
+
+    const correct = outCountry[Math.floor(Math.random() * outCountry.length)];
+    const wrongs = pickN(inCountry, 3);
+    const id = `S3|notin|${country}|${correct}`;
+    const answers = shuffle([correct, ...wrongs]);
+    return {
+      id,
+      question: `Quale di questi stadi NON si trova in ${country}?`,
+      answers,
+      correct: answers.indexOf(correct)
+    };
+  }
+
+  function genPlayerQuestion(diff) {
+    const p = playerBase[Math.floor(Math.random() * playerBase.length)];
+    if (diff === 1) {
+      const id = `P1|nat|${p.name}`;
+      const { answers, correctIndex } = buildAnswers(p.nationality, playerCountries, 4);
+      return { id, question: `Di che nazionalità è ${p.name}?`, answers, correct: correctIndex };
+    }
+
+    if (diff === 2) {
+      const id = `P2|pos|${p.name}`;
+      const { answers, correctIndex } = buildAnswers(p.position, playerPositions, 4);
+      return { id, question: `Qual è il ruolo principale di ${p.name}?`, answers, correct: correctIndex };
+    }
+
+    // diff 3: domanda combinata (più dura)
+    const targetNat = p.nationality;
+    const targetPos = p.position;
+
+    const candidatesCorrect = playerBase.filter(x => x.nationality === targetNat && x.position === targetPos);
+    const correctPlayer = candidatesCorrect[Math.floor(Math.random() * candidatesCorrect.length)];
+
+    const wrongPool = playerBase
+      .filter(x => x.name !== correctPlayer.name)
+      .map(x => x.name);
+
+    const { answers, correctIndex } = buildAnswers(correctPlayer.name, wrongPool, 4);
+    const id = `P3|combo|${targetNat}|${targetPos}|${correctPlayer.name}`;
+    return {
+      id,
+      question: `Quale di questi è un ${targetPos.toLowerCase()} della ${targetNat}?`,
+      answers,
+      correct: correctIndex
+    };
+  }
+
+  function genClubQuestion(diff) {
+    const c = clubBase[Math.floor(Math.random() * clubBase.length)];
+    if (diff === 1) {
+      const id = `C1|country|${c.name}`;
+      const { answers, correctIndex } = buildAnswers(c.country, clubCountries, 4);
+      return { id, question: `In quale paese gioca il club "${c.name}"?`, answers, correct: correctIndex };
+    }
+
+    if (diff === 2) {
+      // "Quale club è di X" con 3 intrusi
+      const target = c.country;
+      const inTarget = clubBase.filter(x => x.country === target).map(x => x.name);
+      const outTarget = clubBase.filter(x => x.country !== target).map(x => x.name);
+
+      const correct = inTarget[Math.floor(Math.random() * inTarget.length)];
+      const wrongs = pickN(outTarget, 3);
+      const id = `C2|in|${target}|${correct}`;
+      const answers = shuffle([correct, ...wrongs]);
+      return {
+        id,
+        question: `Quale di questi club gioca in ${target}?`,
+        answers,
+        correct: answers.indexOf(correct)
+      };
+    }
+
+    // diff 3: "Quale NON è di X" ma con 3 dello stesso paese
+    const target = c.country;
+    const inTarget = clubBase.filter(x => x.country === target).map(x => x.name);
+    const outTarget = clubBase.filter(x => x.country !== target).map(x => x.name);
+
+    const correct = outTarget[Math.floor(Math.random() * outTarget.length)];
+    const wrongs = pickN(inTarget, 3);
+    const id = `C3|notin|${target}|${correct}`;
+    const answers = shuffle([correct, ...wrongs]);
+    return {
+      id,
+      question: `Quale di questi club NON gioca in ${target}?`,
+      answers,
+      correct: answers.indexOf(correct)
+    };
+  }
+
+  function generateUniqueQuestion(quizKey, diff) {
+    const maxTries = 50;
+    for (let i = 0; i < maxTries; i++) {
+      let q;
+      if (quizKey === "stadio") q = genStadiumQuestion(diff);
+      else if (quizKey === "giocatore") q = genPlayerQuestion(diff);
+      else q = genClubQuestion(diff);
+
+      if (!askedIds.has(q.id)) {
+        askedIds.add(q.id);
+        return q;
+      }
+    }
+    // fallback: reset anti-ripetizione se esaurito
+    askedIds = new Set();
+    let q;
+    if (quizKey === "stadio") q = genStadiumQuestion(diff);
+    else if (quizKey === "giocatore") q = genPlayerQuestion(diff);
+    else q = genClubQuestion(diff);
+    askedIds.add(q.id);
+    return q;
+  }
+
+  const quizzesMeta = {
+    stadio:    { title: "Quiz stadi",     tag: "Adattivo: difficoltà cresce con le risposte corrette" },
+    giocatore: { title: "Quiz giocatori", tag: "Adattivo: nazionalità/ruolo/combinazioni" },
+    logo:      { title: "Quiz club",      tag: "Adattivo: paese e intrusi" }
+  };
+
+  function startQuiz(key) {
+    currentQuizKey = key;
+    currentScore = 0;
+    quizLocked = false;
+    currentQuestionPointer = 0;
+    questionsThisRun = QUESTIONS_PER_RUN;
+    askedIds = new Set();
+    currentQuestion = null;
+
+    quizTitleEl.textContent = quizzesMeta[key].title;
+    quizTagEl.textContent = quizzesMeta[key].tag;
+
+    showQuizSection();
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    if (currentQuestionPointer >= questionsThisRun) {
+      quizQuestionTextEl.textContent = "Quiz terminato.";
+      answersContainerEl.innerHTML = "";
+      quizFeedbackEl.textContent = `Punteggio finale: ${currentScore}/${questionsThisRun}`;
+      quizFeedbackEl.className = "feedback";
+      quizScoreEl.textContent = "";
+      quizNextBtn.disabled = true;
+      return;
+    }
+
+    const qNum = currentQuestionPointer + 1;
+    const diff = difficultyFor(qNum, currentScore);
+    currentQuestion = generateUniqueQuestion(currentQuizKey, diff);
+
+    quizQuestionTextEl.textContent = currentQuestion.question;
+    answersContainerEl.innerHTML = "";
+    quizFeedbackEl.textContent = "";
+    quizFeedbackEl.className = "feedback";
+    quizNextBtn.disabled = true;
+    quizLocked = false;
+
+    currentQuestion.answers.forEach((answerText, idx) => {
+      const btn = document.createElement("button");
+      btn.textContent = `${String.fromCharCode(65 + idx)}) ${answerText}`;
+      btn.addEventListener("click", () => handleAnswer(idx));
+      answersContainerEl.appendChild(btn);
+    });
+
+    quizScoreEl.textContent = `Domanda ${qNum}/${questionsThisRun} | Punteggio: ${currentScore} | Difficoltà: ${diff}/3`;
+  }
+
+  function handleAnswer(index) {
+    if (quizLocked) return;
+    quizLocked = true;
+
+    const buttons = answersContainerEl.querySelectorAll("button");
+    buttons.forEach(b => b.disabled = true);
+
+    if (index === currentQuestion.correct) {
+      currentScore++;
+      quizFeedbackEl.textContent = "Corretto.";
+      quizFeedbackEl.className = "feedback correct";
+    } else {
+      const correctText = currentQuestion.answers[currentQuestion.correct];
+      quizFeedbackEl.textContent = `Sbagliato. Risposta corretta: ${correctText}`;
+      quizFeedbackEl.className = "feedback wrong";
+    }
+
+    quizNextBtn.disabled = false;
+    quizScoreEl.textContent = `Domanda ${currentQuestionPointer + 1}/${questionsThisRun} | Punteggio: ${currentScore}`;
+  }
+
+  quizNextBtn.addEventListener("click", () => {
+    currentQuestionPointer++;
+    renderQuestion();
+  });
+
+  quizBackMenuBtn.addEventListener("click", showMenu);
+
+  // Menu navigation
+  menuEl.querySelectorAll("button[data-mode]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-mode");
+      if (mode === "bjarnason") showGameSection();
+      else startQuiz(mode);
+    });
+  });
+  gameBackMenuBtn.addEventListener("click", showMenu);
+
+  // -------------------- GIOCO: BJARNASON FIGLIO DI ODINO --------------------
+  const canvas   = document.getElementById("bjarnason-canvas");
+  const ctx      = canvas.getContext("2d");
+  const statusEl = document.getElementById("bjarnason-status");
+  const startBtn = document.getElementById("start-btn");
+
+  const touchLeft  = document.getElementById("touch-left");
+  const touchRight = document.getElementById("touch-right");
+  const touchJump  = document.getElementById("touch-jump");
+
+  // Mondo
+  const MAX_LEVEL = 25;
+  const WORLD_BASE_WIDTH = 2400;
+  const groundY = 300; // linea terreno
+
+  const BASE_STATS = {
+    width: 30,
+    height: 54,
+    maxSpeed: 4.6,
+    accel: 0.55,
+    friction: 0.82,
+    gravity: 0.62,
+    jumpBase: -11.0
+  };
+
+  const birkir = {
+    x: 70, y: 0,
+    vx: 0, vy: 0,
+    w: BASE_STATS.width,
+    h: BASE_STATS.height,
+    onGround: false,
+    facingRight: true
+  };
+
+  let currentLevel = 1;
+  let lives = 5;
+  let cameraX = 0;
+  let worldWidth = WORLD_BASE_WIDTH;
+
+  // Rune power
+  let runeLevel = 0; // cumulabile
+  const RUNE_MAX = 6;
+
+  // Ostacoli
+  let blocks = [];   // scalini/platform
+  let spikes = [];   // spuntoni
+  let enemies = [];  // difensori
+  let pits = [];     // buche (gole)
+  let runes = [];    // pickup
+
+  // Input
+  const keys = { left:false, right:false, jump:false };
+  let jumpJustPressed = false;
+  function setJumpPressed() {
+    if (!keys.jump) jumpJustPressed = true;
+    keys.jump = true;
+  }
+  function setJumpReleased() {
+    keys.jump = false;
+  }
+
+  // Helpers collision
+  function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+    return !(ax+aw <= bx || ax >= bx+bw || ay+ah <= by || ay >= by+bh);
+  }
+
+  function overPitAt(xCenter) {
+    for (const p of pits) {
+      if (xCenter >= p.x && xCenter <= p.x + p.w) return true;
+    }
+    return false;
+  }
+
+  function damage(reason) {
+    lives--;
+    if (lives <= 0) {
+      lives = 5;
+      currentLevel = 1;
+      runeLevel = 0;
+      setupLevel(currentLevel);
+      statusEl.textContent = `${reason} Fine vite: si riparte dal livello 1. Vite: ${lives}.`;
+      return;
+    }
+    runeLevel = 0;
+    setupLevel(currentLevel);
+    statusEl.textContent = `${reason} Vita persa. Vite: ${lives}. Livello: ${currentLevel}/${MAX_LEVEL}.`;
+  }
+
+  function resetPlayer() {
+    birkir.x = 70;
+    birkir.y = 120;
+    birkir.vx = 0;
+    birkir.vy = 0;
+    birkir.onGround = false;
+    birkir.facingRight = true;
+  }
+
+  function safeRandomX(minX, maxX, w, forbiddenRanges) {
+    // prova a trovare una X che non cada nelle zone proibite
+    for (let i = 0; i < 60; i++) {
+      const x = minX + Math.random() * (maxX - minX);
+      const a = x;
+      const b = x + w;
+      let ok = true;
+      for (const r of forbiddenRanges) {
+        if (!(b < r.a || a > r.b)) { ok = false; break; }
+      }
+      if (ok) return x;
+    }
+    return minX; // fallback
+  }
+
+  function setupLevel(level) {
+    blocks = [];
+    spikes = [];
+    enemies = [];
+    pits = [];
+    runes = [];
+
+    worldWidth = Math.min(WORLD_BASE_WIDTH + (level-1) * 55, 3600);
+    cameraX = 0;
+    resetPlayer();
+
+    // zone: start/arrivo
+    const startSafe = { a: 0, b: 260 };
+    const goalSafe  = { a: worldWidth - 260, b: worldWidth };
+    const forbidden = [startSafe, goalSafe];
+
+    // Gole (pits) – mai vicino start/goal
+    const pitCount = Math.min(Math.floor(level / 4), 5);
+    for (let i=0; i<pitCount; i++){
+      const w = 70 + Math.min(level * 6, 170);
+      const x = safeRandomX(320, worldWidth - 320 - w, w, forbidden);
+      pits.push({ x, w });
+      // aggiorna forbidden per evitare sovrapposizioni e spawn impossibili
+      forbidden.push({ a: x - 80, b: x + w + 80 });
+    }
+
+    // Blocchi (scalini)
+    const blockCount = Math.min(3 + Math.floor(level / 3), 10);
+    for (let i=0; i<blockCount; i++){
+      const w = 110;
+      const h = 22;
+      const x = safeRandomX(300, worldWidth - 300 - w, w, forbidden);
+      const base = 220 - Math.min(level * 2.5, 70);
+      const y = base - Math.random()*55;
+      blocks.push({ x, y, w, h });
+      // non vietare completamente, ma evita di piazzare pit/spike troppo addosso
+    }
+
+    // Spikes (spuntoni)
+    const spikeCount = Math.min(2 + Math.floor(level / 2), 16);
+    for (let i=0; i<spikeCount; i++){
+      const w = 26;
+      const h = 22;
+      const onBlock = (blocks.length > 0) && (Math.random() < 0.35);
+
+      let x, y;
+      if (onBlock) {
+        const b = blocks[Math.floor(Math.random() * blocks.length)];
+        x = clamp(b.x + 10 + Math.random() * (b.w - 20 - w), b.x + 8, b.x + b.w - w - 8);
+        y = b.y - h;
+      } else {
+        // a terra, ma NON dentro una gola e NON vicino start/goal
+        x = safeRandomX(300, worldWidth - 300 - w, w, forbidden);
+        y = groundY - h;
+        const center = x + w/2;
+        if (overPitAt(center)) { i--; continue; }
+      }
+      spikes.push({ x, y, w, h });
+    }
+
+    // Rune (potenziamento salto, cumulabile)
+    const runeCount = Math.min(1 + Math.floor(level / 6), 3);
+    for (let i=0; i<runeCount; i++){
+      const w = 24, h = 24;
+      const onBlock = blocks.length > 0 && (Math.random() < 0.5);
+
+      let x, y;
+      if (onBlock) {
+        const b = blocks[Math.floor(Math.random() * blocks.length)];
+        x = clamp(b.x + 15 + Math.random() * (b.w - 30 - w), b.x + 8, b.x + b.w - w - 8);
+        y = b.y - h - 4;
+      } else {
+        x = safeRandomX(300, worldWidth - 300 - w, w, forbidden);
+        y = groundY - h - 2;
+        const center = x + w/2;
+        if (overPitAt(center)) { i--; continue; }
+      }
+      runes.push({ x, y, w, h, active:true });
+    }
+
+    // Nemici (difensori tedeschi)
+    const enemyCount = Math.min(1 + Math.floor(level / 3), 8);
+    for (let i=0; i<enemyCount; i++){
+      const w = 34, h = 46;
+      const x = safeRandomX(340, worldWidth - 340 - w, w, forbidden);
+      const center = x + w/2;
+      if (overPitAt(center)) { i--; continue; }
+
+      const speed = 1.2 + level*0.06 + Math.random()*0.5;
+      enemies.push({
+        x, y: groundY - h,
+        w, h,
+        dir: Math.random()<0.5 ? -1 : 1,
+        speed,
+        left: x - 85,
+        right: x + 85
+      });
+    }
+
+    statusEl.textContent = `Livello ${currentLevel}/${MAX_LEVEL} – Vite: ${lives} – Rune: ${runeLevel}/${RUNE_MAX}.`;
+  }
+
+  // Keyboard: prevenzione scroll + edge-jump
+  window.addEventListener("keydown", (e) => {
+    const code = e.code;
+    if (code === "ArrowLeft" || code === "KeyA") { e.preventDefault(); keys.left = true; }
+    if (code === "ArrowRight" || code === "KeyD") { e.preventDefault(); keys.right = true; }
+    if (code === "ArrowUp" || code === "Space") { e.preventDefault(); setJumpPressed(); }
+  }, { passive: false });
+
+  window.addEventListener("keyup", (e) => {
+    const code = e.code;
+    if (code === "ArrowLeft" || code === "KeyA") { e.preventDefault(); keys.left = false; }
+    if (code === "ArrowRight" || code === "KeyD") { e.preventDefault(); keys.right = false; }
+    if (code === "ArrowUp" || code === "Space") { e.preventDefault(); setJumpReleased(); }
+  }, { passive: false });
+
+  // Touch controls: pointer events
+  function bindHold(btn, onDown, onUp) {
+    const down = (e) => { e.preventDefault(); onDown(); };
+    const up   = (e) => { e.preventDefault(); onUp(); };
+
+    btn.addEventListener("pointerdown", down);
+    btn.addEventListener("pointerup", up);
+    btn.addEventListener("pointercancel", up);
+    btn.addEventListener("pointerleave", up);
+  }
+  bindHold(touchLeft,  () => keys.left = true,  () => keys.left = false);
+  bindHold(touchRight, () => keys.right = true, () => keys.right = false);
+  bindHold(touchJump,  () => setJumpPressed(),  () => setJumpReleased());
+
+  function jumpForce() {
+    // più rune => salto più potente (più negativo)
+    const lvl = clamp(runeLevel, 0, RUNE_MAX);
+    return BASE_STATS.jumpBase - (lvl * 1.15);
+  }
+
+  function updateGame() {
+    // Input orizzontale
+    if (keys.left && !keys.right) {
+      birkir.vx -= BASE_STATS.accel;
+      birkir.facingRight = false;
+    } else if (keys.right && !keys.left) {
+      birkir.vx += BASE_STATS.accel;
+      birkir.facingRight = true;
+    } else {
+      birkir.vx *= BASE_STATS.friction;
+      if (Math.abs(birkir.vx) < 0.05) birkir.vx = 0;
+    }
+
+    const maxSpeed = BASE_STATS.maxSpeed + (currentLevel * 0.02);
+    birkir.vx = clamp(birkir.vx, -maxSpeed, maxSpeed);
+
+    // ---- X move + risoluzione collisioni laterali
+    birkir.x += birkir.vx;
+    birkir.x = clamp(birkir.x, 0, worldWidth - birkir.w);
+
+    for (const b of blocks) {
+      if (rectsOverlap(birkir.x, birkir.y, birkir.w, birkir.h, b.x, b.y, b.w, b.h)) {
+        // risolvi solo orizzontale qui
+        if (birkir.vx > 0) birkir.x = b.x - birkir.w;
+        else if (birkir.vx < 0) birkir.x = b.x + b.w;
+        birkir.vx = 0;
+      }
+    }
+
+    // ---- Salto (edge, non “tenuto”)
+    if (jumpJustPressed) {
+      if (birkir.onGround) {
+        birkir.vy = jumpForce();
+        birkir.onGround = false;
+      }
+      jumpJustPressed = false;
+    }
+
+    // ---- Y move + gravità
+    birkir.vy += BASE_STATS.gravity;
+    const oldY = birkir.y;
+    birkir.y += birkir.vy;
+
+    // Ground / pits
+    birkir.onGround = false;
+    const centerX = birkir.x + birkir.w/2;
+    const overPit = overPitAt(centerX);
+
+    if (!overPit && birkir.y + birkir.h >= groundY) {
+      birkir.y = groundY - birkir.h;
+      birkir.vy = 0;
+      birkir.onGround = true;
+    }
+
+    // Blocchi: risoluzione verticale robusta (atterraggio anche “al centro”)
+    for (const b of blocks) {
+      if (!rectsOverlap(birkir.x, birkir.y, birkir.w, birkir.h, b.x, b.y, b.w, b.h)) continue;
+
+      if (birkir.vy > 0 && (oldY + birkir.h) <= b.y + 2) {
+        // atterraggio sopra
+        birkir.y = b.y - birkir.h;
+        birkir.vy = 0;
+        birkir.onGround = true;
+      } else if (birkir.vy < 0 && oldY >= b.y + b.h - 2) {
+        // colpo dal basso
+        birkir.y = b.y + b.h;
+        birkir.vy = 0;
+      }
+    }
+
+    // Caduta nel vuoto
+    if (birkir.y > canvas.height + 200) {
+      damage("Caduta in gola.");
+      return;
+    }
+
+    // Spuntoni
+    for (const s of spikes) {
+      if (rectsOverlap(birkir.x, birkir.y, birkir.w, birkir.h, s.x, s.y, s.w, s.h)) {
+        damage("Spuntoni.");
+        return;
+      }
+    }
+
+    // Rune
+    for (const r of runes) {
+      if (!r.active) continue;
+      if (rectsOverlap(birkir.x, birkir.y, birkir.w, birkir.h, r.x, r.y, r.w, r.h)) {
+        r.active = false;
+        runeLevel = clamp(runeLevel + 1, 0, RUNE_MAX);
+        statusEl.textContent = `Rune presa. Livello ${currentLevel}/${MAX_LEVEL} – Vite: ${lives} – Rune: ${runeLevel}/${RUNE_MAX}.`;
+      }
+    }
+
+    // Nemici
+    for (const e of enemies) {
+      e.x += e.dir * e.speed;
+      if (e.x < e.left) { e.x = e.left; e.dir = 1; }
+      if (e.x + e.w > e.right) { e.x = e.right - e.w; e.dir = -1; }
+
+      // Non farli camminare “sulle gole”
+      const eCenter = e.x + e.w/2;
+      if (overPitAt(eCenter)) e.dir *= -1;
+
+      if (rectsOverlap(birkir.x, birkir.y, birkir.w, birkir.h, e.x, e.y, e.w, e.h)) {
+        // se lo colpisci dall'alto, rimbalzo
+        const birkirBottom = birkir.y + birkir.h;
+        if (birkirBottom <= e.y + 10 && birkir.vy > 0) {
+          birkir.vy = jumpForce() * 0.65;
+          // spingi nemico un po'
+          e.dir = birkir.facingRight ? 1 : -1;
+          e.x += e.dir * 12;
+        } else {
+          damage("Contrasto tedesco.");
+          return;
+        }
+      }
+    }
+
+    // Goal
+    const goalX = worldWidth - 95;
+    if (birkir.x + birkir.w >= goalX) {
+      if (currentLevel < MAX_LEVEL) {
+        currentLevel++;
+        setupLevel(currentLevel);
+        statusEl.textContent = `Livello completato. Ora: ${currentLevel}/${MAX_LEVEL}. Vite: ${lives}. Rune: ${runeLevel}/${RUNE_MAX}.`;
+      } else {
+        statusEl.textContent = `Completati 25 livelli. Vite: ${lives}. Rune: ${runeLevel}/${RUNE_MAX}.`;
+        // resta sull'ultimo livello
+        setupLevel(MAX_LEVEL);
+      }
+      return;
+    }
+
+    // Camera
+    cameraX = birkir.x - canvas.width/2;
+    cameraX = clamp(cameraX, 0, worldWidth - canvas.width);
+  }
+
+  // ----------- DRAW -----------
+  function drawIcelandFlag(x, y, w, h) {
+    // blu
+    ctx.fillStyle = "#0d47a1";
+    ctx.fillRect(x, y, w, h);
+
+    // croce bianca
+    const vWhite = Math.max(4, Math.floor(w * 0.16));
+    const hWhite = Math.max(4, Math.floor(h * 0.18));
+    const vx = x + Math.floor(w * 0.35);
+    const hy = y + Math.floor(h * 0.45);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(vx - Math.floor(vWhite/2), y, vWhite, h);
+    ctx.fillRect(x, hy - Math.floor(hWhite/2), w, hWhite);
+
+    // croce rossa (più sottile)
+    const vRed = Math.max(2, Math.floor(vWhite * 0.55));
+    const hRed = Math.max(2, Math.floor(hWhite * 0.55));
+    ctx.fillStyle = "#c62828";
+    ctx.fillRect(vx - Math.floor(vRed/2), y, vRed, h);
+    ctx.fillRect(x, hy - Math.floor(hRed/2), w, hRed);
+  }
+
+  function drawGame() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // cielo islandese
+    const sky = ctx.createLinearGradient(0,0,0,canvas.height);
+    sky.addColorStop(0, "#0f2340");
+    sky.addColorStop(0.6, "#1c4675");
+    sky.addColorStop(1, "#0b1726");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // montagne (parallasse)
+    ctx.fillStyle = "#14263b";
+    for (let i=0;i<6;i++){
+      const baseX = i*280 - cameraX*0.25;
+      ctx.beginPath();
+      ctx.moveTo(baseX, 250);
+      ctx.lineTo(baseX+140, 120);
+      ctx.lineTo(baseX+280, 250);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "#1a3552";
+    for (let i=0;i<5;i++){
+      const baseX = i*320 - cameraX*0.4;
+      ctx.beginPath();
+      ctx.moveTo(baseX, 270);
+      ctx.lineTo(baseX+160, 150);
+      ctx.lineTo(baseX+320, 270);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // terreno
+    ctx.fillStyle = "#213548";
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+    ctx.fillStyle = "#1b2c3e";
+    for (let x=-60; x<canvas.width+60; x+=18){
+      const h = 6 + (x%36===0?4:0);
+      ctx.fillRect(x, groundY - h, 18, h);
+    }
+
+    // gole (pits)
+    ctx.fillStyle = "#05070c";
+    for (const p of pits) {
+      const sx = p.x - cameraX;
+      if (sx + p.w < 0 || sx > canvas.width) continue;
+      ctx.fillRect(sx, groundY, p.w, canvas.height - groundY);
+    }
+
+    // blocchi (scalini)
+    for (const b of blocks) {
+      const sx = b.x - cameraX;
+      if (sx + b.w < 0 || sx > canvas.width) continue;
+
+      const g = ctx.createLinearGradient(sx, b.y, sx, b.y + b.h);
+      g.addColorStop(0, "#5d4037");
+      g.addColorStop(1, "#3e2723");
+      ctx.fillStyle = g;
+      ctx.fillRect(sx, b.y, b.w, b.h);
+      ctx.strokeStyle = "#2b1b13";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx, b.y, b.w, b.h);
+      ctx.fillStyle = "#795548";
+      ctx.fillRect(sx+4, b.y+4, b.w-8, b.h-8);
+    }
+
+    // spuntoni
+    for (const s of spikes) {
+      const sx = s.x - cameraX;
+      if (sx + s.w < 0 || sx > canvas.width) continue;
+      // triangolo
+      ctx.fillStyle = "#cfd8dc";
+      ctx.beginPath();
+      ctx.moveTo(sx, s.y + s.h);
+      ctx.lineTo(sx + s.w/2, s.y);
+      ctx.lineTo(sx + s.w, s.y + s.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#90a4ae";
+      ctx.stroke();
+    }
+
+    // bandiera arrivo (ISLANDA)
+    const goalX = worldWidth - 95;
+    const flagSX = goalX - cameraX;
+    if (flagSX > -80 && flagSX < canvas.width + 80) {
+      // palo
+      ctx.fillStyle = "#cfd8dc";
+      ctx.fillRect(flagSX, groundY - 110, 6, 110);
+
+      // bandiera rettangolare
+      const fw = 62, fh = 34;
+      const fx = flagSX + 6;
+      const fy = groundY - 108;
+      drawIcelandFlag(fx, fy, fw, fh);
+
+      // cordino
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.beginPath();
+      ctx.moveTo(flagSX+6, fy+2);
+      ctx.lineTo(flagSX+6, fy+fh-2);
+      ctx.stroke();
+    }
+
+    // rune
+    for (const r of runes) {
+      if (!r.active) continue;
+      const sx = r.x - cameraX;
+      if (sx + r.w < 0 || sx > canvas.width) continue;
+      const cx = sx + r.w/2;
+      const cy = r.y + r.h/2;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.sin(Date.now()/220) * 0.18);
+
+      const grad = ctx.createRadialGradient(0,0,3, 0,0,13);
+      grad.addColorStop(0, "#fffde7");
+      grad.addColorStop(1, "#fbc02d");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0,0,12,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#f57f17";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.strokeStyle = "#0d47a1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-5, -7);
+      ctx.lineTo(0, 7);
+      ctx.lineTo(5, -7);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // nemici (maglia Germania)
+    for (const e of enemies) {
+      const sx = e.x - cameraX;
+      if (sx + e.w < 0 || sx > canvas.width) continue;
+
+      // testa
+      const headCX = sx + e.w/2;
+      const headCY = e.y - 10;
+      ctx.fillStyle = "#f3c99a";
+      ctx.beginPath();
+      ctx.arc(headCX, headCY, 9, 0, Math.PI*2);
+      ctx.fill();
+
+      // capelli castani
+      ctx.fillStyle = "#3e2723";
+      ctx.beginPath();
+      ctx.arc(headCX, headCY - 2, 10, Math.PI, 0);
+      ctx.fill();
+
+      // maglia Germania: bianco + fascia nera
+      const torsoY = e.y + 6;
+      const torsoH = e.h - 18;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(sx + 4, torsoY, e.w - 8, torsoH);
+      ctx.fillStyle = "#212121";
+      ctx.fillRect(sx + 4, torsoY, e.w - 8, 4);
+
+      // pantaloncini neri
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(sx + 4, e.y + e.h - 12, e.w - 8, 12);
+
+      // scarpe
+      ctx.fillStyle = "#e0e0e0";
+      ctx.fillRect(sx + 6, e.y + e.h, 6, 6);
+      ctx.fillRect(sx + e.w - 12, e.y + e.h, 6, 6);
+    }
+
+    // birkir (biondo, maglia Islanda)
+    const pSX = birkir.x - cameraX;
+
+    // ombra
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(pSX + birkir.w/2, birkir.y + birkir.h, birkir.w/2, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // testa
+    const headCX = pSX + birkir.w/2;
+    const headCY = birkir.y - 8;
+    ctx.fillStyle = "#f5c89b";
+    ctx.beginPath();
+    ctx.arc(headCX, headCY, 9, 0, Math.PI*2);
+    ctx.fill();
+
+    // capelli biondi
+    ctx.fillStyle = "#f5d28b";
+    ctx.beginPath();
+    ctx.arc(headCX, headCY - 2, 11, Math.PI, 0);
+    ctx.fill();
+
+    // torso (Islanda: blu + croce laterale)
+    const torsoY = birkir.y + 10;
+    const torsoH = birkir.h - 18;
+    const tg = ctx.createLinearGradient(pSX, torsoY, pSX, torsoY + torsoH);
+    tg.addColorStop(0, "#1e88e5");
+    tg.addColorStop(1, "#0d47a1");
+    ctx.fillStyle = tg;
+    ctx.fillRect(pSX, torsoY, birkir.w, torsoH);
+
+    // croce laterale (bianco+rosso)
+    ctx.fillStyle = "#bbdefb";
+    ctx.fillRect(pSX, torsoY + 4, 4, torsoH - 8);
+    ctx.fillStyle = "#c62828";
+    ctx.fillRect(pSX + 1, torsoY + 6, 2, torsoH - 12);
+
+    // pantaloncini chiari
+    ctx.fillStyle = "#fafafa";
+    ctx.fillRect(pSX + 2, birkir.y + birkir.h - 14, birkir.w - 4, 10);
+
+    // calzettoni blu
+    ctx.fillStyle = "#1565c0";
+    ctx.fillRect(pSX + 3, birkir.y + birkir.h - 4, 6, 8);
+    ctx.fillRect(pSX + birkir.w - 9, birkir.y + birkir.h - 4, 6, 8);
+
+    // HUD
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(10, 10, 220, 44);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px Arial";
+    ctx.fillText(`Livello ${currentLevel}/${MAX_LEVEL}`, 16, 28);
+    ctx.fillText(`Vite: ${lives}`, 16, 44);
+    ctx.fillStyle = (runeLevel>0) ? "#fbc02d" : "#c1c9dd";
+    ctx.fillText(`Rune: ${runeLevel}/${RUNE_MAX}`, 120, 44);
+  }
+
+  function gameLoop() {
+    if (!gameRunning) return;
+    try {
+      updateGame();
+      drawGame();
+    } catch (err) {
+      gameRunning = false;
+      statusEl.textContent = "Errore runtime nel gioco (loop fermato).";
+      console.error(err);
+      return;
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  startBtn.addEventListener("click", () => {
+    lives = 5;
+    currentLevel = 1;
+    runeLevel = 0;
+    setupLevel(currentLevel);
+    statusEl.textContent = `Gioco avviato. Livello ${currentLevel}/${MAX_LEVEL} – Vite: ${lives} – Rune: ${runeLevel}/${RUNE_MAX}.`;
+    if (!gameRunning) {
+      gameRunning = true;
+      requestAnimationFrame(gameLoop);
+    }
+  });
+
+  // Avvio: menu
+  showMenu();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
+  }
+</script>
+</body>
+</html>
